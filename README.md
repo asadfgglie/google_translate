@@ -1,1 +1,1 @@
-"# google_translate" 
+# google_translate
