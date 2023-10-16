@@ -215,8 +215,9 @@ def output_modifier(string: str, state):
             tmp_str += string[:code_index[0]] + f'{{{{{"_" * (i + 1)}}}}}' + string[code_index[1]+3:]
         string = tmp_str
 
-    string = audio_str + model_to_user.translate(string).replace(bot_name, state['name2']).replace(user_name, state['name1']) + \
-        ('</original_str>\n\n> ' + original_str.replace('\n', '\n> ' * 2)) if params['show_model_original_output'] else ''
+    string = audio_str + model_to_user.translate(string).replace(bot_name, state['name2']).replace(user_name, state['name1'])
+    if params['show_model_original_output']:
+        string += '</original_str>\n\n> ' + original_str.replace('\n', '\n> ' * 2)
 
     if len(code_index_list) > 0:
         for k, v in code_index_map.items():
