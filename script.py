@@ -4,11 +4,11 @@ from modules.utils import gradio
 from modules import chat, ui_chat
 
 params = {
-    "user_input_activate": False,
+    "user_input_activate": True,
     "model_output_activate": True,
     "user_language": "zh-TW",
     "model_language": 'en',
-    'show_model_original_output': True
+    'show_model_original_output': False
 }
 
 user_name = '{{_|_|}}'
@@ -216,7 +216,7 @@ def output_modifier(string: str, state):
         string = tmp_str
 
     string = audio_str + model_to_user.translate(string).replace(bot_name, state['name2']).replace(user_name, state['name1']) + \
-        ('</original_str>\n\n> ' + original_str.replace('\n', '\n> ' * 2))
+        ('</original_str>\n\n> ' + original_str.replace('\n', '\n> ' * 2)) if params['show_model_original_output'] else ''
 
     if len(code_index_list) > 0:
         for k, v in code_index_map.items():
@@ -257,7 +257,7 @@ def ui():
 
     show_model_original_output.change(lambda x: params.update({'show_model_original_output': x}), show_model_original_output, None).then(
         toggle_text_in_history, gradio('history'), gradio('history')).then(
-        chat.save_persistent_history, gradio('history', 'character_menu', 'mode'), None).then(
+        chat.save_history, gradio('history', 'unique_id', 'character_menu', 'mode'), None).then(
         chat.redraw_html, gradio(ui_chat.reload_arr), gradio('display'))
 
     user_language.change(update_user, user_language, None)
