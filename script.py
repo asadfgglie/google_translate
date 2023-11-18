@@ -1,3 +1,5 @@
+import json
+
 import gradio as gr
 from deep_translator import GoogleTranslator
 from modules.utils import gradio
@@ -124,6 +126,14 @@ language_codes = {
 user_to_model = GoogleTranslator(source=params['user_language'], target=params['model_language'])
 model_to_user = GoogleTranslator(source=params['model_language'], target=params['user_language'])
 
+def setup():
+    global params
+    try:
+        with open('./config.json', 'r') as f:
+            params = json.loads(f.read())
+    except OSError:
+        save_config()
+
 def toggle_text_in_history(history):
     for i, entry in enumerate(history['visible']):
         if params['show_model_original_output']:
@@ -226,16 +236,6 @@ def output_modifier(string: str, state):
     return string
 
 
-def bot_prefix_modifier(string):
-    """
-    This function is only applied in chat mode. It modifies
-    the prefix text for the Bot and can be used to bias its
-    behavior.
-    """
-
-    return string
-
-
 def ui():
     # Finding the user_language name from the user_language code to use as the default value
     user_language_name = list(language_codes.keys())[list(language_codes.values()).index(params['user_language'])]
@@ -253,13 +253,13 @@ def ui():
             model_language = gr.Dropdown(value=model_language_name, choices=[k for k in language_codes], label='Model Language')
 
     # Event functions to update the parameters in the backend
-    user_activate.change(lambda x: params.update({"user_input_activate": x}), user_activate, None)
-    model_activate.change(lambda x: params.update({'model_output_activate': x}), model_activate, None)
+    user_activate.change(lambda x: params.update({"user_input_activate": x}), user_activate, None).then(save_config)
+    model_activate.change(lambda x: params.update({'model_output_activate': x}), model_activate, None).then(save_config)
 
     show_model_original_output.change(lambda x: params.update({'show_model_original_output': x}), show_model_original_output, None).then(
         toggle_text_in_history, gradio('history'), gradio('history')).then(
         chat.save_history, gradio('history', 'unique_id', 'character_menu', 'mode'), None).then(
-        chat.redraw_html, gradio(ui_chat.reload_arr), gradio('display'))
+        chat.redraw_html, gradio(ui_chat.reload_arr), gradio('display')).then(save_config)
 
     user_language.change(update_user, user_language, None)
     model_language.change(update_model, model_language, None)
@@ -275,3 +275,8 @@ def update_model(x):
     params.update({"model_language": language_codes[x]})
     model_to_user = GoogleTranslator(source=params['model_language'], target=params['user_language'])
     user_to_model = GoogleTranslator(source=params['user_language'], target=params['model_language'])
+
+def save_config():
+    global params
+    with open('./config.json', 'w') as f:
+        f.write(json.dumps(params, indent=2))
