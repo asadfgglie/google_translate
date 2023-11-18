@@ -129,7 +129,7 @@ model_to_user = GoogleTranslator(source=params['model_language'], target=params[
 def setup():
     global params
     try:
-        with open('./config.json', 'r') as f:
+        with open('./extensions/google_translate/config.json', 'r') as f:
             params = json.loads(f.read())
     except OSError:
         save_config()
@@ -278,5 +278,5 @@ def update_model(x):
 
 def save_config():
     global params
-    with open('./config.json', 'w') as f:
+    with open('./extensions/google_translate/config.json', 'w') as f:
         f.write(json.dumps(params, indent=2))
