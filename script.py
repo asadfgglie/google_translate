@@ -1,4 +1,5 @@
 import json
+import re
 
 import gradio as gr
 from deep_translator import GoogleTranslator
@@ -171,17 +172,32 @@ def input_modifier(string: str, state):
         if len(code_index_list[-1]) == 1:
             code_index_list = code_index_list[:-1]
         tmp_str = ''
+        last_end = 0
         for i, code_index in enumerate(code_index_list):
             code_index_map[i + 1] = string[code_index[0]: code_index[1] + 3]
-        for i, code_index in enumerate(code_index_list):
-            tmp_str += string[:code_index[0]] + f'{{{{{"_" * (i + 1)}}}}}' + string[code_index[1] + 3:]
+            tmp_str += string[last_end: code_index[0]] + f'{{{{{"_" * (i + 1)}}}}}'
+            last_end = code_index[1] + 3
         string = tmp_str
 
-    string = user_to_model.translate(string).replace(bot_name, state['name2']).replace(user_name, state['name1'])
+    tmp_str = ''
+    img_base64_map = {}
+    last_end = 0
+    for i, m in enumerate(re.finditer('<img src=\"data:image/jpeg;base64,([A-Za-z0-9+/=]+)\">', string)):
+        img_base64_map[i + 1] = string[m.start(): m.end()]
+        tmp_str += string[last_end: m.start()] + f'{{{{{"-" * (i + 1)}}}}}'
+        last_end = m.end()
+    string = tmp_str
 
-    if len(code_index_list) > 0:
-        for k, v in code_index_map.items():
-            string = string.replace(f'{{{{{"_" * (k + 1)}}}}}', v)
+    if len(string) <= 5000:
+        string = user_to_model.translate(string)
+    else:
+        print(f'Input string is too long. Input string len: {len(string)}')
+    string.replace(bot_name, state['name2']).replace(user_name, state['name1'])
+
+    for k, v in code_index_map.items():
+        string = string.replace(f'{{{{{"_" * k}}}}}', v)
+    for k, v in img_base64_map.items():
+        string = string.replace(f'{{{{{"-" * k}}}}}', v)
 
     return string
 
