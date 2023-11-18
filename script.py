@@ -153,8 +153,6 @@ def input_modifier(string: str, state):
     if not params['user_input_activate']:
         return string
 
-    string = string.replace(state['name2'], bot_name).replace(state['name1'], user_name)
-
     tmp_str = string
     code_index_list = []
     code_index_map = {}
@@ -177,22 +175,24 @@ def input_modifier(string: str, state):
             code_index_map[i + 1] = string[code_index[0]: code_index[1] + 3]
             tmp_str += string[last_end: code_index[0]] + f'{{{{{"_" * (i + 1)}}}}}'
             last_end = code_index[1] + 3
-        string = tmp_str
+        string = tmp_str + string[last_end:]
 
     tmp_str = ''
     img_base64_map = {}
     last_end = 0
-    for i, m in enumerate(re.finditer('<img src=\"data:image/jpeg;base64,([A-Za-z0-9+/=]+)\">', string)):
+    for i, m in enumerate(re.finditer('<img src="data:image/jpeg;base64,([A-Za-z0-9+/=]+)">', string)):
         img_base64_map[i + 1] = string[m.start(): m.end()]
         tmp_str += string[last_end: m.start()] + f'{{{{{"-" * (i + 1)}}}}}'
         last_end = m.end()
-    string = tmp_str
+    if len(tmp_str) > 0:
+        string = tmp_str + string[last_end:]
 
     if len(string) <= 5000:
+        string = string.replace(state['name2'], bot_name).replace(state['name1'], user_name)
         string = user_to_model.translate(string)
+        string = string.replace(bot_name, state['name2']).replace(user_name, state['name1'])
     else:
         print(f'Input string is too long. Input string len: {len(string)}')
-    string.replace(bot_name, state['name2']).replace(user_name, state['name1'])
 
     for k, v in code_index_map.items():
         string = string.replace(f'{{{{{"_" * k}}}}}', v)
